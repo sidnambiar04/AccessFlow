@@ -1,9 +1,20 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { User, Mail, Building, Shield, CheckCircle2, XCircle } from 'lucide-react';
+import { User, Mail, Building, Shield, CheckCircle2, XCircle, Clock } from 'lucide-react';
 
 const Profile = () => {
-    const { user } = useAuth();
+    const { user, hasProjectsAccess, hasSalesAccess } = useAuth();
+
+    const getExpiryLabel = (expiryDate) => {
+        if (!expiryDate) return '(Permanent)';
+        const diffMs = new Date(expiryDate).getTime() - Date.now();
+        if (diffMs <= 0) return '(Expired)';
+        const diffMins = Math.ceil(diffMs / (1000 * 60));
+        const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
+        const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+        const text = diffMins < 60 ? `${diffMins}m left` : diffHours < 24 ? `${diffHours}h left` : `${diffDays}d left`;
+        return `(Expires in ${text})`;
+    };
 
     return (
         <div className="max-w-3xl space-y-6">
@@ -45,15 +56,19 @@ const Profile = () => {
                     <div>
                         <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Project Management Access</span>
                         <div className="flex items-center gap-1.5 mt-1">
-                            {user?.permissions?.projects || user?.role === 'Admin' ? (
+                            {hasProjectsAccess ? (
                                 <>
                                     <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                                    <span className="text-sm font-medium text-emerald-700">Authorized</span>
+                                    <span className="text-sm font-medium text-emerald-700">
+                                        Authorized <span className="text-xs text-slate-500 font-normal">{getExpiryLabel(user?.permissionExpiry?.projects)}</span>
+                                    </span>
                                 </>
                             ) : (
                                 <>
                                     <XCircle className="h-4 w-4 text-slate-400" />
-                                    <span className="text-sm font-medium text-slate-500">Not Authorized</span>
+                                    <span className="text-sm font-medium text-slate-500">
+                                        {user?.permissions?.projects ? 'Access Expired' : 'Not Authorized'}
+                                    </span>
                                 </>
                             )}
                         </div>
@@ -62,15 +77,19 @@ const Profile = () => {
                     <div>
                         <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Sales Management Access</span>
                         <div className="flex items-center gap-1.5 mt-1">
-                            {user?.permissions?.sales || user?.role === 'Admin' ? (
+                            {hasSalesAccess ? (
                                 <>
                                     <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                                    <span className="text-sm font-medium text-emerald-700">Authorized</span>
+                                    <span className="text-sm font-medium text-emerald-700">
+                                        Authorized <span className="text-xs text-slate-500 font-normal">{getExpiryLabel(user?.permissionExpiry?.sales)}</span>
+                                    </span>
                                 </>
                             ) : (
                                 <>
                                     <XCircle className="h-4 w-4 text-slate-400" />
-                                    <span className="text-sm font-medium text-slate-500">Not Authorized</span>
+                                    <span className="text-sm font-medium text-slate-500">
+                                        {user?.permissions?.sales ? 'Access Expired' : 'Not Authorized'}
+                                    </span>
                                 </>
                             )}
                         </div>

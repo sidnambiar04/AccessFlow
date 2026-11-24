@@ -1,12 +1,31 @@
 import Resource from '../models/Resource.js';
 
+// Helper to determine all revoked or expired resource IDs for a user
+const getExcludedResourceIds = (user) => {
+    if (user.role === 'Admin') return [];
+    const now = new Date();
+    const expiredIds = (user.fileExpiry || [])
+        .filter((item) => item.expiresAt && new Date(item.expiresAt) < now)
+        .map((item) => item.resourceId.toString());
+
+    const revokedIds = (user.revokedResources || []).map((id) => id.toString());
+    return Array.from(new Set([...revokedIds, ...expiredIds]));
+};
+
 // --- PROJECT RESOURCES ---
 
 // @desc    Get all project resources (Requires 'projects' permission or Admin)
 // @route   GET /api/projects
 export const getProjects = async (req, res) => {
     try {
-        const resources = await Resource.find({ section: 'projects' })
+        const filter = { section: 'projects' };
+        // Exclude any specifically revoked or time-expired resources for this employee
+        const excluded = getExcludedResourceIds(req.user);
+        if (excluded.length > 0) {
+            filter._id = { $nin: excluded };
+        }
+
+        const resources = await Resource.find(filter)
             .populate('uploadedBy', 'name email')
             .sort({ createdAt: -1 });
         res.json({ success: true, count: resources.length, data: resources });
@@ -68,7 +87,14 @@ export const deleteProject = async (req, res) => {
 // @route   GET /api/sales
 export const getSales = async (req, res) => {
     try {
-        const resources = await Resource.find({ section: 'sales' })
+        const filter = { section: 'sales' };
+        // Exclude any specifically revoked or time-expired resources for this employee
+        const excluded = getExcludedResourceIds(req.user);
+        if (excluded.length > 0) {
+            filter._id = { $nin: excluded };
+        }
+
+        const resources = await Resource.find(filter)
             .populate('uploadedBy', 'name email')
             .sort({ createdAt: -1 });
         res.json({ success: true, count: resources.length, data: resources });
@@ -131,11 +157,23 @@ export const deleteSales = async (req, res) => {
 export const getEmployeeDashboard = async (req, res) => {
     try {
         const sections = [];
-        if (req.user.role === 'Admin' || req.user.permissions?.projects) sections.push('projects');
-        if (req.user.role === 'Admin' || req.user.permissions?.sales) sections.push('sales');
+        const now = new Date();
+        const hasActiveProjects = req.user.role === 'Admin' || 
+            (req.user.permissions?.projects && (!req.user.permissionExpiry?.projects || new Date(req.user.permissionExpiry.projects) > now));
+        const hasActiveSales = req.user.role === 'Admin' || 
+            (req.user.permissions?.sales && (!req.user.permissionExpiry?.sales || new Date(req.user.permissionExpiry.sales) > now));
 
-        // Fetch recent resources matching allowed sections
-        const recentResources = await Resource.find({ section: { $in: sections } })
+        if (hasActiveProjects) sections.push('projects');
+        if (hasActiveSales) sections.push('sales');
+
+        // Fetch recent resources matching allowed sections (excluding revoked & expired)
+        const filter = { section: { $in: sections } };
+        const excluded = getExcludedResourceIds(req.user);
+        if (excluded.length > 0) {
+            filter._id = { $nin: excluded };
+        }
+
+        const recentResources = await Resource.find(filter)
             .sort({ createdAt: -1 })
             .limit(6);
 

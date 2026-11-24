@@ -11,10 +11,11 @@ import {
     User,
     LogOut,
     Shield,
+    ScrollText,
 } from 'lucide-react';
 
 const Sidebar = () => {
-    const { user, logout, isAdmin } = useAuth();
+    const { user, logout, isAdmin, hasProjectsAccess, hasSalesAccess } = useAuth();
     const navigate = useNavigate();
 
     const handleLogout = () => {
@@ -28,17 +29,18 @@ const Sidebar = () => {
         { name: 'Pending Requests', path: '/admin/requests', icon: UserCheck },
         { name: 'Employees', path: '/admin/employees', icon: Users },
         { name: 'Roles & Permissions', path: '/admin/roles-permissions', icon: ShieldAlert },
+        { name: 'Audit Logs', path: '/admin/audit-logs', icon: ScrollText },
         { name: 'Project Management', path: '/admin/projects', icon: FolderKanban },
         { name: 'Sales Management', path: '/admin/sales', icon: TrendingUp },
     ];
 
-    // Employee navigation items (Dynamic based on independent permissions)
+    // Employee navigation items (Hides automatically if permission is expired or revoked)
     const employeeNav = [
         { name: 'Overview', path: '/dashboard', icon: LayoutDashboard },
-        ...(user?.permissions?.projects
+        ...(hasProjectsAccess
             ? [{ name: 'Project Management', path: '/projects', icon: FolderKanban }]
             : []),
-        ...(user?.permissions?.sales
+        ...(hasSalesAccess
             ? [{ name: 'Sales Management', path: '/sales', icon: TrendingUp }]
             : []),
         { name: 'My Profile', path: '/profile', icon: User },

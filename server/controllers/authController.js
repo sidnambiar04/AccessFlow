@@ -1,6 +1,7 @@
 import User from '../models/User.js';
 import AccessRequest from '../models/AccessRequest.js';
 import { generateToken } from '../utils/jwt.js';
+import { logAudit } from '../utils/systemEvents.js';
 
 // @desc    Register a new employee
 // @route   POST /api/auth/register
@@ -46,6 +47,13 @@ export const register = async (req, res) => {
         await AccessRequest.create({
             userId: user._id,
             status: 'pending',
+        });
+
+        // Audit Log
+        await logAudit(req, {
+            action: 'USER_REGISTERED',
+            target: { userId: user._id, name: user.name, email: user.email },
+            details: { department: user.department, designation: user.designation },
         });
 
         res.status(201).json({
@@ -111,6 +119,13 @@ export const login = async (req, res) => {
         // Generate JWT token
         const token = generateToken(user._id);
 
+        // Audit Log
+        await logAudit(req, {
+            action: 'USER_LOGIN',
+            target: { userId: user._id, name: user.name, email: user.email },
+            details: { role: user.role, department: user.department },
+        });
+
         res.json({
             success: true,
             token,
@@ -123,6 +138,9 @@ export const login = async (req, res) => {
                 role: user.role,
                 status: user.status,
                 permissions: user.permissions,
+                permissionExpiry: user.permissionExpiry,
+                revokedResources: user.revokedResources,
+                fileExpiry: user.fileExpiry,
             },
         });
     } catch (error) {
@@ -144,6 +162,9 @@ export const getMe = async (req, res) => {
             role: req.user.role,
             status: req.user.status,
             permissions: req.user.permissions,
+            permissionExpiry: req.user.permissionExpiry,
+            revokedResources: req.user.revokedResources,
+            fileExpiry: req.user.fileExpiry,
         },
     });
 };

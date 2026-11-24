@@ -16,6 +16,7 @@ import Overview from './pages/admin/Overview';
 import PendingRequests from './pages/admin/PendingRequests';
 import Employees from './pages/admin/Employees';
 import RolesPermissions from './pages/admin/RolesPermissions';
+import AuditLogs from './pages/admin/AuditLogs';
 
 // Resource & Employee Pages
 import EmployeeDashboard from './pages/employee/EmployeeDashboard';
@@ -54,6 +55,7 @@ function App() {
                 <Route path="/admin/requests" element={<PendingRequests />} />
                 <Route path="/admin/employees" element={<Employees />} />
                 <Route path="/admin/roles-permissions" element={<RolesPermissions />} />
+                <Route path="/admin/audit-logs" element={<AuditLogs />} />
                 <Route path="/admin/projects" element={<ProjectResources />} />
                 <Route path="/admin/sales" element={<SalesResources />} />
               </Route>

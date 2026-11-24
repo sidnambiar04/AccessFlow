@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { ShieldCheck, User } from 'lucide-react';
+import NotificationDropdown from './NotificationDropdown';
 
 const Navbar = ({ title = 'Dashboard' }) => {
     const { user } = useAuth();
@@ -33,6 +34,9 @@ const Navbar = ({ title = 'Dashboard' }) => {
                 >
                     {user?.role}
                 </span>
+
+                {/* In-App Notification Center */}
+                <NotificationDropdown />
 
                 {/* User Card */}
                 <div className="flex items-center gap-3 pl-4 border-l border-slate-200">

@@ -51,6 +51,33 @@ const userSchema = new mongoose.Schema(
                 default: false,
             },
         },
+        permissionExpiry: {
+            projects: {
+                type: Date,
+                default: null, // null means permanent / no expiry
+            },
+            sales: {
+                type: Date,
+                default: null,
+            },
+        },
+        revokedResources: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Resource',
+            },
+        ],
+        fileExpiry: [
+            {
+                resourceId: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: 'Resource',
+                },
+                expiresAt: {
+                    type: Date,
+                },
+            },
+        ],
     },
     {
         timestamps: true,

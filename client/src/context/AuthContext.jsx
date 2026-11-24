@@ -61,6 +61,19 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    // Helper: checks both boolean flag and timestamp expiry
+    const isPermissionActive = (permKey) => {
+        if (!user) return false;
+        if (user.role === 'Admin') return true;
+        if (!user.permissions?.[permKey]) return false;
+
+        const expiry = user.permissionExpiry?.[permKey];
+        if (expiry && new Date(expiry).getTime() < Date.now()) {
+            return false; // Access expired
+        }
+        return true;
+    };
+
     return (
         <AuthContext.Provider
             value={{
@@ -72,8 +85,9 @@ export const AuthProvider = ({ children }) => {
                 logout,
                 refreshUser,
                 isAdmin: user?.role === 'Admin',
-                hasProjectsAccess: user?.role === 'Admin' || Boolean(user?.permissions?.projects),
-                hasSalesAccess: user?.role === 'Admin' || Boolean(user?.permissions?.sales),
+                hasProjectsAccess: isPermissionActive('projects'),
+                hasSalesAccess: isPermissionActive('sales'),
+                isPermissionActive,
             }}
         >
             {children}

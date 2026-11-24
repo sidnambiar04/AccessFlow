@@ -9,6 +9,8 @@ import {
     updateUserPermissions,
     updateUserStatus,
     getDashboardStats,
+    getUserFileAccess,
+    updateUserFileAccess,
 } from '../controllers/adminController.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
 
@@ -31,5 +33,7 @@ router.get('/users/:id', getUserById);
 router.patch('/users/:id/role', updateUserRole);
 router.patch('/users/:id/permissions', updateUserPermissions);
 router.patch('/users/:id/status', updateUserStatus);
+router.get('/users/:id/file-access', getUserFileAccess);
+router.patch('/users/:id/file-access', updateUserFileAccess);
 
 export default router;

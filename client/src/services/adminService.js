@@ -39,3 +39,13 @@ export const updateEmployeeStatus = async (id, status) => {
     const response = await API.patch(`/admin/users/${id}/status`, { status });
     return response.data;
 };
+
+export const getUserFileAccess = async (id) => {
+    const response = await API.get(`/admin/users/${id}/file-access`);
+    return response.data;
+};
+
+export const updateUserFileAccess = async (id, revokedResources, fileExpiry) => {
+    const response = await API.patch(`/admin/users/${id}/file-access`, { revokedResources, fileExpiry });
+    return response.data;
+};

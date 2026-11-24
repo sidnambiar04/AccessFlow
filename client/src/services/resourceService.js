@@ -44,3 +44,15 @@ export const getEmployeeDashboardData = async () => {
     const response = await API.get('/dashboard');
     return response.data;
 };
+
+export const uploadPdfFile = async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await API.post('/upload', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+    return response.data;
+};

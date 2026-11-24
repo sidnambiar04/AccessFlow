@@ -1,5 +1,7 @@
 import User from '../models/User.js';
 import AccessRequest from '../models/AccessRequest.js';
+import Resource from '../models/Resource.js';
+import { logAudit, notifyUser } from '../utils/systemEvents.js';
 
 // @desc    Get all registration requests
 // @route   GET /api/admin/requests
@@ -44,6 +46,13 @@ export const approveRequest = async (req, res) => {
                 sales: Boolean(permissions.sales),
             };
         }
+
+        if (permissionExpiry) {
+            user.permissionExpiry = {
+                projects: permissionExpiry.projects ? new Date(permissionExpiry.projects) : null,
+                sales: permissionExpiry.sales ? new Date(permissionExpiry.sales) : null,
+            };
+        }
         await user.save();
 
         // Update request
@@ -51,6 +60,21 @@ export const approveRequest = async (req, res) => {
         request.reviewedBy = req.user._id;
         request.reviewedAt = new Date();
         await request.save();
+
+        // Audit Log & Notification
+        await logAudit(req, {
+            action: 'ONBOARDING_APPROVED',
+            target: { userId: user._id, name: user.name, email: user.email },
+            details: { assignedRole: user.role, permissions: user.permissions },
+        });
+
+        await notifyUser({
+            recipientId: user._id,
+            title: 'Account Approved!',
+            message: `Welcome to AccessFlow! Your account has been approved with role ${user.role}.`,
+            type: 'access_granted',
+            link: '/dashboard',
+        });
 
         res.json({
             success: true,
@@ -82,6 +106,13 @@ export const rejectRequest = async (req, res) => {
         request.reviewedBy = req.user._id;
         request.reviewedAt = new Date();
         await request.save();
+
+        if (user) {
+            await logAudit(req, {
+                action: 'ONBOARDING_REJECTED',
+                target: { userId: user._id, name: user.name, email: user.email },
+            });
+        }
 
         res.json({
             success: true,
@@ -149,6 +180,20 @@ export const updateUserRole = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
+        await logAudit(req, {
+            action: 'ROLE_UPDATED',
+            target: { userId: user._id, name: user.name, email: user.email },
+            details: { newRole: role },
+        });
+
+        await notifyUser({
+            recipientId: user._id,
+            title: 'Role Updated',
+            message: `Your company access role has been updated to ${role}.`,
+            type: 'system',
+            link: '/profile',
+        });
+
         res.json({ success: true, message: `Role updated to ${role}`, data: user });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -157,19 +202,54 @@ export const updateUserRole = async (req, res) => {
 
 // @desc    Update independent section permissions
 // @route   PATCH /api/admin/users/:id/permissions
+// @desc    Update independent section permissions & optional expiry dates
+// @route   PATCH /api/admin/users/:id/permissions
 export const updateUserPermissions = async (req, res) => {
     try {
-        const { projects, sales } = req.body;
+        const { projects, sales, projectsExpiry, salesExpiry } = req.body;
 
         const user = await User.findById(req.params.id);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        if (typeof projects === 'boolean') user.permissions.projects = projects;
-        if (typeof sales === 'boolean') user.permissions.sales = sales;
+        if (typeof projects === 'boolean') {
+            user.permissions.projects = projects;
+            // If turning off, clear the expiry
+            if (!projects) user.permissionExpiry.projects = null;
+        }
+        if (typeof sales === 'boolean') {
+            user.permissions.sales = sales;
+            // If turning off, clear the expiry
+            if (!sales) user.permissionExpiry.sales = null;
+        }
+
+        // Set or update expiry dates if provided (null means permanent)
+        if (projectsExpiry !== undefined) {
+            user.permissionExpiry.projects = projectsExpiry ? new Date(projectsExpiry) : null;
+        }
+        if (salesExpiry !== undefined) {
+            user.permissionExpiry.sales = salesExpiry ? new Date(salesExpiry) : null;
+        }
 
         await user.save();
+
+        await logAudit(req, {
+            action: 'PERMISSIONS_UPDATED',
+            target: { userId: user._id, name: user.name, email: user.email },
+            details: {
+                permissions: user.permissions,
+                permissionExpiry: user.permissionExpiry,
+            },
+        });
+
+        await notifyUser({
+            recipientId: user._id,
+            title: 'Permissions Changed',
+            message: 'An administrator updated your section access permissions.',
+            type: 'access_granted',
+            link: '/dashboard',
+        });
 
         res.json({
             success: true,
@@ -180,7 +260,6 @@ export const updateUserPermissions = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
-
 // @desc    Update employee account status (activate/suspend)
 // @route   PATCH /api/admin/users/:id/status
 export const updateUserStatus = async (req, res) => {
@@ -199,6 +278,12 @@ export const updateUserStatus = async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
+
+        await logAudit(req, {
+            action: 'USER_STATUS_UPDATED',
+            target: { userId: user._id, name: user.name, email: user.email },
+            details: { newStatus: status },
+        });
 
         res.json({ success: true, message: `Status updated to ${status}`, data: user });
     } catch (error) {
@@ -232,6 +317,80 @@ export const getDashboardStats = async (req, res) => {
                 salesEmployees,
                 recentRequests,
             },
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get an employee's file access matrix (all resources + revoked status)
+// @route   GET /api/admin/users/:id/file-access
+export const getUserFileAccess = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        const resources = await Resource.find({}).sort({ section: 1, createdAt: -1 });
+
+        res.json({
+            success: true,
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                permissions: user.permissions,
+                revokedResources: user.revokedResources || [],
+                fileExpiry: user.fileExpiry || [],
+            },
+            resources,
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Update specific revoked documents and file expiration for an employee
+// @route   PATCH /api/admin/users/:id/file-access
+export const updateUserFileAccess = async (req, res) => {
+    try {
+        const { revokedResources, fileExpiry } = req.body;
+        const user = await User.findById(req.params.id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        if (Array.isArray(revokedResources)) {
+            user.revokedResources = revokedResources;
+        }
+
+        if (Array.isArray(fileExpiry)) {
+            user.fileExpiry = fileExpiry.map((item) => ({
+                resourceId: item.resourceId,
+                expiresAt: item.expiresAt ? new Date(item.expiresAt) : null,
+            }));
+        }
+
+        await user.save();
+
+        await logAudit(req, {
+            action: 'PERMISSIONS_UPDATED',
+            target: { userId: user._id, name: user.name, email: user.email },
+            details: {
+                permissions: user.permissions,
+                permissionExpiry: user.permissionExpiry,
+            },
+        });
+
+        await notifyUser({
+            recipientId: user._id,
+            title: 'Permissions Changed',
+            message: 'An administrator updated your section access permissions.',
+            type: 'access_granted',
+            link: '/dashboard',
+        });
+
+        res.json({
+            success: true,
+            message: 'Document access permissions updated successfully',
+            data: user,
         });
     } catch (error) {
         res.status(500).json({ message: error.message });

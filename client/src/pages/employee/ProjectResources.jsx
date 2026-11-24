@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { getProjectResources, createProjectResource, deleteProjectResource } from '../../services/resourceService';
-import { FolderKanban, Plus, ExternalLink, Trash2, Search } from 'lucide-react';
+import { getProjectResources, createProjectResource, deleteProjectResource, uploadPdfFile } from '../../services/resourceService';
+import PdfPreviewModal from '../../components/common/PdfPreviewModal';
+import { FolderKanban, Plus, ExternalLink, Trash2, Search, FileText, Eye, Upload, CheckCircle2 } from 'lucide-react';
 
 const ProjectResources = () => {
     const { isAdmin } = useAuth();
@@ -9,9 +10,12 @@ const ProjectResources = () => {
     const [search, setSearch] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
     const [loading, setLoading] = useState(true);
+    const [previewDoc, setPreviewDoc] = useState(null);
 
     // New resource modal state
     const [showModal, setShowModal] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [uploadedFileName, setUploadedFileName] = useState('');
     const [form, setForm] = useState({
         title: '',
         description: '',
@@ -43,12 +47,34 @@ const ProjectResources = () => {
         }
     };
 
+    const handleFileUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+            alert('Please select a valid PDF file (.pdf).');
+            return;
+        }
+
+        setUploading(true);
+        try {
+            const res = await uploadPdfFile(file);
+            setForm((prev) => ({ ...prev, fileUrl: res.fileUrl }));
+            setUploadedFileName(file.name);
+        } catch (err) {
+            alert(err.response?.data?.message || 'Failed to upload PDF');
+        } finally {
+            setUploading(false);
+        }
+    };
+
     const handleCreate = async (e) => {
         e.preventDefault();
         try {
             await createProjectResource(form);
             setShowModal(false);
             setForm({ title: '', description: '', category: 'Technical Documentation', fileUrl: '' });
+            setUploadedFileName('');
             fetchResources();
         } catch (err) {
             alert('Failed to create resource');
@@ -153,15 +179,14 @@ const ProjectResources = () => {
                                     {new Date(item.createdAt).toLocaleDateString()}
                                 </span>
                                 {item.fileUrl ? (
-                                    <a
-                                        href={item.fileUrl}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline"
+                                    <button
+                                        type="button"
+                                        onClick={() => setPreviewDoc(item)}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-xs font-semibold text-blue-700 transition-colors cursor-pointer"
                                     >
-                                        <span>Open Doc</span>
-                                        <ExternalLink className="h-3.5 w-3.5" />
-                                    </a>
+                                        <Eye className="h-3.5 w-3.5" />
+                                        <span>Preview PDF</span>
+                                    </button>
                                 ) : (
                                     <span className="text-xs text-slate-400 italic">No link</span>
                                 )}
@@ -208,14 +233,51 @@ const ProjectResources = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Document Link / URL</label>
-                            <input
-                                type="url"
-                                placeholder="https://..."
-                                value={form.fileUrl}
-                                onChange={(e) => setForm({ ...form, fileUrl: e.target.value })}
-                                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
+                            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                                Attach PDF Document *
+                            </label>
+                            
+                            {/* File Upload Drop Area */}
+                            <div className="border-2 border-dashed border-slate-200 hover:border-blue-400 rounded-xl p-4 text-center transition-colors bg-slate-50/60 mb-2">
+                                <input
+                                    type="file"
+                                    accept="application/pdf"
+                                    onChange={handleFileUpload}
+                                    id="project-pdf-upload"
+                                    className="hidden"
+                                />
+                                <label htmlFor="project-pdf-upload" className="cursor-pointer flex flex-col items-center">
+                                    {uploading ? (
+                                        <div className="flex items-center gap-2 text-xs font-semibold text-blue-600 py-2">
+                                            <div className="h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                                            <span>Uploading PDF to server...</span>
+                                        </div>
+                                    ) : uploadedFileName ? (
+                                        <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700 py-1">
+                                            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                                            <span className="truncate max-w-xs">{uploadedFileName}</span>
+                                            <span className="text-[10px] text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full shrink-0">Uploaded</span>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <Upload className="h-6 w-6 text-slate-400 mb-1" />
+                                            <span className="text-xs font-semibold text-blue-600 hover:underline">Click to browse & upload PDF</span>
+                                            <span className="text-[11px] text-slate-400 mt-0.5">Maximum file size: 10MB</span>
+                                        </>
+                                    )}
+                                </label>
+                            </div>
+
+                            {/* Optional / Fallback link input */}
+                            <div>
+                                <input
+                                    type="text"
+                                    placeholder="Or paste relative path: /uploads/file.pdf or URL"
+                                    value={form.fileUrl}
+                                    onChange={(e) => setForm({ ...form, fileUrl: e.target.value })}
+                                    className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                />
+                            </div>
                         </div>
                         <div className="flex gap-3 pt-2">
                             <button
@@ -235,6 +297,12 @@ const ProjectResources = () => {
                     </form>
                 </div>
             )}
+            {/* PDF Preview Modal */}
+            <PdfPreviewModal
+                isOpen={Boolean(previewDoc)}
+                onClose={() => setPreviewDoc(null)}
+                doc={previewDoc}
+            />
         </div>
     );
 };

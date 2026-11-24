@@ -34,45 +34,43 @@ const seedData = async () => {
         console.log('   Email:    admin@accessflow.com');
         console.log('   Password: AdminPassword123!');
 
-        // 2. Seed initial demo resources
-        const existingResources = await Resource.countDocuments();
-        if (existingResources === 0) {
-                await Resource.insertMany([
-                    {
-                        title: 'Q1 System Architecture & Cloud Migration',
-                        description: 'Microservices roadmap and MongoDB cluster setup guide.',
-                        section: 'projects',
-                        category: 'System Architecture',
-                        fileUrl: 'https://example.com/docs/arch-v1.pdf',
-                        uploadedBy: adminUser._id,
-                    },
-                    {
-                        title: 'Sprint 24 Milestone Progress',
-                        description: 'Engineering sprint velocity and deliverables tracking.',
-                        section: 'projects',
-                        category: 'Project Progress',
-                        fileUrl: 'https://example.com/docs/sprint-24.pdf',
-                        uploadedBy: adminUser._id,
-                    },
-                    {
-                        title: 'Q4 Enterprise Revenue & Forecast',
-                        description: 'Quarterly breakdown of ARR and closed-won contracts (Demo Data).',
-                        section: 'sales',
-                        category: 'Revenue Analytics',
-                        fileUrl: 'https://example.com/docs/revenue-q4.pdf',
-                        uploadedBy: adminUser._id,
-                    },
-                    {
-                        title: '2026 Enterprise Pipeline & Targets',
-                        description: 'Target accounts and sales quota targets by region (Demo Data).',
-                        section: 'sales',
-                        category: 'Sales Targets',
-                        fileUrl: 'https://example.com/docs/sales-targets-2026.pdf',
-                        uploadedBy: adminUser._id,
-                    },
-                ]);
-                console.log(' Seeded demo project & sales resources.');
-            }
+        // 2. Seed / refresh demo resources with local PDF files
+        await Resource.deleteMany({});
+        await Resource.insertMany([
+            {
+                title: 'Project Northstar Status Report',
+                description: 'Key deliverables, phase status, team metrics, and milestone tracker.',
+                section: 'projects',
+                category: 'Project Reports',
+                fileUrl: '/uploads/01_Project_Northstar_Status_Report.pdf',
+                uploadedBy: adminUser._id,
+            },
+            {
+                title: 'Project Northstar Solution Architecture',
+                description: 'End-to-end cloud infrastructure, API gateway, microservices, and database models.',
+                section: 'projects',
+                category: 'System Architecture',
+                fileUrl: '/uploads/02_Project_Northstar_Solution_Architecture.pdf',
+                uploadedBy: adminUser._id,
+            },
+            {
+                title: 'Q4 2026 Sales Performance Report',
+                description: 'Executive quarterly review, regional performance breakdown, and quota attainment.',
+                section: 'sales',
+                category: 'Monthly Sales Reports',
+                fileUrl: '/uploads/03_Q4_2026_Sales_Performance_Report.pdf',
+                uploadedBy: adminUser._id,
+            },
+            {
+                title: 'Revenue Outlook & Deals Register',
+                description: 'Pipeline stage breakdown, ARR growth projections, and enterprise client prospects.',
+                section: 'sales',
+                category: 'Revenue Analytics',
+                fileUrl: '/uploads/04_Revenue_Outlook_and_Deals_Register.pdf',
+                uploadedBy: adminUser._id,
+            },
+        ]);
+        console.log(' Seeded demo project & sales resources with uploaded PDF documents.');
 
         console.log(' Seeding completed successfully!');
         process.exit(0);
