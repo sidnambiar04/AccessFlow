@@ -19,6 +19,23 @@ const EmployeeDashboard = () => {
     useEffect(() => {
         fetchDashboard();
         fetchMyRequests();
+
+        // Background sync every 10s and on window focus for live status updates
+        const timer = setInterval(() => {
+            fetchDashboard();
+            fetchMyRequests();
+        }, 10000);
+
+        const handleFocus = () => {
+            fetchDashboard();
+            fetchMyRequests();
+        };
+        window.addEventListener('focus', handleFocus);
+
+        return () => {
+            clearInterval(timer);
+            window.removeEventListener('focus', handleFocus);
+        };
     }, []);
 
     const fetchDashboard = async () => {

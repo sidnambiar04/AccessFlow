@@ -61,6 +61,20 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    // Auto background sync every 8 seconds & on tab focus so permissions update live without refreshing
+    useEffect(() => {
+        if (!token) return;
+
+        const timer = setInterval(refreshUser, 8000);
+        const handleFocus = () => refreshUser();
+        window.addEventListener('focus', handleFocus);
+
+        return () => {
+            clearInterval(timer);
+            window.removeEventListener('focus', handleFocus);
+        };
+    }, [token]);
+
     // Helper: checks both boolean flag and timestamp expiry
     const isPermissionActive = (permKey) => {
         if (!user) return false;

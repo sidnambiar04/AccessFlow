@@ -20,8 +20,10 @@ const RolesPermissions = () => {
 
     const fetchEmployees = async () => {
         try {
-            const data = await getEmployees();
-            setEmployees(data.data);
+            const data = await getEmployees({ status: 'approved' });
+            // Only approved users belong in the active Roles & Permissions matrix
+            const approvedOnly = (data.data || []).filter((emp) => emp.status === 'approved');
+            setEmployees(approvedOnly);
         } catch (err) {
             console.error(err);
         } finally {
@@ -30,31 +32,49 @@ const RolesPermissions = () => {
     };
 
     const handleRoleChange = async (userId, newRole) => {
+        const prevRole = employees.find((emp) => emp._id === userId)?.role;
+        // Optimistic UI update: change role instantly in UI
+        setEmployees((prev) =>
+            prev.map((emp) => (emp._id === userId ? { ...emp, role: newRole } : emp))
+        );
+        showToast(`Role updated to ${newRole}`);
+
         try {
             await updateEmployeeRole(userId, newRole);
-            setEmployees((prev) =>
-                prev.map((emp) => (emp._id === userId ? { ...emp, role: newRole } : emp))
-            );
-            showToast(`Role updated to ${newRole}`);
         } catch (err) {
+            // Revert on error
+            setEmployees((prev) =>
+                prev.map((emp) => (emp._id === userId ? { ...emp, role: prevRole } : emp))
+            );
             alert('Failed to update role');
         }
     };
 
     const handleTogglePermission = async (userId, permKey, currentValue) => {
+        const newValue = !currentValue;
+        // Optimistic UI update: flip switch in 0ms!
+        setEmployees((prev) =>
+            prev.map((emp) =>
+                emp._id === userId
+                    ? { ...emp, permissions: { ...emp.permissions, [permKey]: newValue } }
+                    : emp
+            )
+        );
+        showToast(`Updated ${permKey} permission`);
+
         try {
-            const updatedPermissions = { [permKey]: !currentValue };
+            const updatedPermissions = { [permKey]: newValue };
             await updateEmployeePermissions(userId, updatedPermissions);
+        } catch (err) {
+            // Revert switch on network/server error
             setEmployees((prev) =>
                 prev.map((emp) =>
                     emp._id === userId
-                        ? { ...emp, permissions: { ...emp.permissions, [permKey]: !currentValue } }
+                        ? { ...emp, permissions: { ...emp.permissions, [permKey]: currentValue } }
                         : emp
                 )
             );
-            showToast(`Updated ${permKey} permission`);
-        } catch (err) {
-            alert('Failed to update permissions');
+            alert('Failed to update permissions on server');
         }
     };
 

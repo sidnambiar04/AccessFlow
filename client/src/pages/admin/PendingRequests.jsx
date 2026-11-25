@@ -30,10 +30,24 @@ const PendingRequests = () => {
 
     useEffect(() => {
         fetchRegistrationRequests();
+        const timer = setInterval(fetchRegistrationRequests, 12000);
+        const handleFocus = () => fetchRegistrationRequests();
+        window.addEventListener('focus', handleFocus);
+        return () => {
+            clearInterval(timer);
+            window.removeEventListener('focus', handleFocus);
+        };
     }, [regFilter]);
 
     useEffect(() => {
         fetchPermissionRequests();
+        const timer = setInterval(fetchPermissionRequests, 12000);
+        const handleFocus = () => fetchPermissionRequests();
+        window.addEventListener('focus', handleFocus);
+        return () => {
+            clearInterval(timer);
+            window.removeEventListener('focus', handleFocus);
+        };
     }, [permFilter]);
 
     const showToast = (msg) => {
