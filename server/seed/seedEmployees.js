@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
+import AccessRequest from '../models/AccessRequest.js';
 
 dotenv.config();
 
@@ -205,6 +206,7 @@ const seedEmployees = async () => {
         let updatedCount = 0;
 
         for (const emp of employees) {
+            let targetUser;
             const existing = await User.findOne({ email: emp.email });
             if (existing) {
                 // Update properties
@@ -216,13 +218,28 @@ const seedEmployees = async () => {
                 existing.permissions = emp.permissions;
                 existing.password = defaultPasswordHash;
                 await existing.save();
+                targetUser = existing;
                 updatedCount++;
             } else {
-                await User.create({
+                targetUser = await User.create({
                     ...emp,
                     password: defaultPasswordHash,
                 });
                 createdCount++;
+            }
+
+            // If pending, make sure an AccessRequest document exists in the queue
+            if (emp.status === 'pending') {
+                const existingReq = await AccessRequest.findOne({ userId: targetUser._id });
+                if (!existingReq) {
+                    await AccessRequest.create({
+                        userId: targetUser._id,
+                        status: 'pending',
+                    });
+                } else {
+                    existingReq.status = 'pending';
+                    await existingReq.save();
+                }
             }
         }
 
