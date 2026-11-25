@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Lock, Mail, AlertCircle, ArrowRight, Eye, EyeOff, Sparkles, ShieldCheck } from 'lucide-react';
+import { Lock, Mail, AlertCircle, ArrowRight, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -13,12 +13,6 @@ const Login = () => {
 
   const { login } = useAuth();
   const navigate = useNavigate();
-
-  const handleFillAdmin = () => {
-    setEmail('admin@accessflow.com');
-    setPassword('AdminPassword123!');
-    setError('');
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -176,24 +170,6 @@ const Login = () => {
                 Request access
               </Link>
             </p>
-          </div>
-
-          {/* Demo Card */}
-          <div className="mt-6 p-4 bg-white border border-slate-200 rounded-2xl shadow-xs">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold text-slate-700">Demo Admin Account</p>
-                <p className="text-xs text-slate-400 font-mono mt-0.5">admin@accessflow.com</p>
-              </div>
-              <button
-                type="button"
-                onClick={handleFillAdmin}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
-              >
-                <Sparkles className="h-3 w-3" />
-                Auto-fill
-              </button>
-            </div>
           </div>
         </div>
       </div>
