@@ -25,7 +25,7 @@ export const getRequests = async (req, res) => {
 // @route   PATCH /api/admin/requests/:id/approve
 export const approveRequest = async (req, res) => {
     try {
-        const { role, permissions } = req.body;
+        const { role, permissions, permissionExpiry } = req.body;
         const request = await AccessRequest.findById(req.params.id);
 
         if (!request) {
