@@ -58,7 +58,7 @@ const ProjectResources = () => {
 
         setUploading(true);
         try {
-            const res = await uploadPdfFile(file);
+            const res = await uploadPdfFile(file, 'projects');
             setForm((prev) => ({ ...prev, fileUrl: res.fileUrl }));
             setUploadedFileName(file.name);
         } catch (err) {

@@ -16,10 +16,13 @@ router.post('/', authenticate, requireAdmin, (req, res) => {
             return res.status(400).json({ success: false, message: 'Please select a PDF file to upload' });
         }
 
+        const section = req.query?.section || req.body?.section || '';
+        const subfolder = (section === 'sales' || section === 'projects') ? `/${section}` : '';
+
         res.status(201).json({
             success: true,
             fileName: req.file.originalname,
-            fileUrl: `/uploads/${req.file.filename}`,
+            fileUrl: `/uploads${subfolder}/${req.file.filename}`,
         });
     });
 });

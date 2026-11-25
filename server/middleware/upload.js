@@ -5,7 +5,11 @@ import fs from 'fs';
 // Configure storage destination & filename
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        const uploadDir = path.join(process.cwd(), 'uploads');
+        const section = req.query?.section || req.body?.section || '';
+        const subfolder = (section === 'sales' || section === 'projects') ? section : '';
+        const uploadDir = subfolder
+            ? path.join(process.cwd(), 'uploads', subfolder)
+            : path.join(process.cwd(), 'uploads');
         if (!fs.existsSync(uploadDir)) {
             fs.mkdirSync(uploadDir, { recursive: true });
         }
