@@ -50,10 +50,8 @@ const Login = () => {
       <div className="w-full max-w-md">
         {/* Brand Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex h-12 w-12 rounded-xl bg-blue-600 items-center justify-center text-white shadow-md mb-3">
-            <Shield className="h-6 w-6" />
-          </div>
-          <h2 className="text-2xl font-bold text-slate-900">Sign in to AccessFlow</h2>
+          <img src="/accessflow-logo-light.svg" alt="AccessFlow" className="h-14 mx-auto mb-2" />
+          <h2 className="text-2xl font-bold text-slate-900 mt-2">Sign in to your account</h2>
           <p className="text-sm text-slate-500 mt-1">
             Enterprise Onboarding & Access Management Portal
           </p>

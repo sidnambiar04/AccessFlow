@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 140" width="1040" height="280">
+
+<g transform="translate(30,25) scale(1.5625)">
+  <rect width="64" height="64" rx="16" fill="#2563EB"/>
+  <path d="M32 11 L49 17.5 V31 C49 41.5 42 49 32 53 C22 49 15 41.5 15 31 V17.5 Z" fill="#fff"/>
+  <path d="M24.5 41 L32 23.5 L39.5 41" fill="none" stroke="#0B1F4B" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="32" cy="36" r="3" fill="#2563EB"/>
+</g>
+<text x="145" y="75" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif" font-size="44" font-weight="800" letter-spacing="-1.2" fill="#0B1F4B">Access<tspan fill="#2563EB">Flow</tspan></text>
+<text x="147" y="100" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif" font-size="12" font-weight="600" letter-spacing="3.2" fill="#64748B">ENTERPRISE ACCESS MANAGEMENT</text>
+</svg>

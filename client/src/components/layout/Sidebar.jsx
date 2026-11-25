@@ -51,10 +51,8 @@ const Sidebar = () => {
     return (
         <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col min-h-screen border-r border-slate-800 select-none">
             {/* Brand Logo */}
-            <div className="h-16 flex items-center px-6 gap-3 border-b border-slate-800">
-                <div className="h-9 w-9 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-sm">
-                    <Shield className="h-5 w-5" />
-                </div>
+            <div className="h-16 flex items-center px-5 gap-3 border-b border-slate-800">
+                <img src="/icon.svg" alt="AccessFlow" className="h-9 w-9 rounded-xl shadow-md" />
                 <div>
                     <span className="font-bold text-lg text-white tracking-tight">AccessFlow</span>
                     <span className="block text-[10px] text-blue-400 font-medium uppercase tracking-wider">
